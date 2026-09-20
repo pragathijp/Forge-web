@@ -3,7 +3,7 @@ import { CSS } from '@dnd-kit/utilities';
 import type { Task } from '../api/types';
 import { PRIORITY_COLORS } from '../api/types';
 
-export function TaskCard({ task }: { task: Task }) {
+export function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id });
 
   const style: React.CSSProperties = {
@@ -21,7 +21,7 @@ export function TaskCard({ task }: { task: Task }) {
   const priorityColor = PRIORITY_COLORS[task.priority];
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onClick={onClick}>
       <div style={{ fontSize: 13, color: 'var(--color-text-primary)', marginBottom: 'var(--space-2)' }}>
         {task.title}
       </div>

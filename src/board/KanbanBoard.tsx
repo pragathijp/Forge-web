@@ -13,12 +13,14 @@ import { TASK_STATUSES } from '../api/types';
 import type { Task, TaskStatus } from '../api/types';
 import { Column } from './Column';
 import { TaskCard } from './TaskCard';
+import { TaskDetailPanel } from './TaskDetailPanel';
 
 export function KanbanBoard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -32,10 +34,10 @@ export function KanbanBoard() {
   }, []);
 
   function handleDragStart(event: DragStartEvent) {
-  if (isSaving) return;
-  const task = tasks.find((t) => t.id === event.active.id);
-  setActiveTask(task ?? null);
-}
+    if (isSaving) return;
+    const task = tasks.find((t) => t.id === event.active.id);
+    setActiveTask(task ?? null);
+  }
 
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
@@ -45,8 +47,6 @@ export function KanbanBoard() {
     const activeTask = tasks.find((t) => t.id === active.id);
     if (!activeTask) return;
 
-    // Determine target status: either a column was dropped on directly,
-    // or another card was dropped on — in which case, use that card's column.
     const overIsColumn = TASK_STATUSES.includes(over.id as TaskStatus);
     const targetStatus: TaskStatus = overIsColumn
       ? (over.id as TaskStatus)
@@ -56,7 +56,6 @@ export function KanbanBoard() {
       .filter((t) => t.status === targetStatus && t.id !== activeTask.id)
       .sort((a, b) => a.position - b.position);
 
-    // Figure out insertAfterTaskId based on where it was dropped among that column's cards.
     let insertAfterTaskId: string | null = null;
     if (!overIsColumn) {
       const overIndex = columnTasks.findIndex((t) => t.id === over.id);
@@ -68,7 +67,6 @@ export function KanbanBoard() {
       insertAfterTaskId = columnTasks[columnTasks.length - 1].id;
     }
 
-    // Optimistic update: move the task locally immediately.
     const previousTasks = tasks;
     const updatedTask = { ...activeTask, status: targetStatus };
     const withoutActive = tasks.filter((t) => t.id !== activeTask.id);
@@ -81,7 +79,7 @@ export function KanbanBoard() {
     optimisticTasks.splice(insertIndex, 0, updatedTask);
     setTasks(optimisticTasks);
 
-        setIsSaving(true);
+    setIsSaving(true);
     try {
       const saved = await moveTask({
         taskId: activeTask.id,
@@ -95,12 +93,17 @@ export function KanbanBoard() {
         setConflictMessage('This task was updated elsewhere — refreshing…');
         await loadTasks();
         setTimeout(() => setConflictMessage(null), 3000);
-            } else {
+      } else {
         setTasks(previousTasks);
       }
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleTaskSaved(updated: Task) {
+    setTasks((current) => current.map((t) => (t.id === updated.id ? updated : t)));
+    setSelectedTask(updated);
   }
 
   return (
@@ -128,11 +131,23 @@ export function KanbanBoard() {
       >
         <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
           {TASK_STATUSES.map((status) => (
-            <Column key={status} status={status} tasks={tasks.filter((t) => t.status === status)} />
+            <Column
+              key={status}
+              status={status}
+              tasks={tasks.filter((t) => t.status === status)}
+              onTaskClick={setSelectedTask}
+            />
           ))}
         </div>
-        <DragOverlay>{activeTask ? <TaskCard task={activeTask} /> : null}</DragOverlay>
+        <DragOverlay>{activeTask ? <TaskCard task={activeTask} onClick={() => {}} /> : null}</DragOverlay>
       </DndContext>
+      {selectedTask && (
+        <TaskDetailPanel
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onSaved={handleTaskSaved}
+        />
+      )}
     </div>
   );
 }

@@ -7,9 +7,10 @@ import { TaskCard } from './TaskCard';
 interface ColumnProps {
   status: TaskStatus;
   tasks: Task[];
+  onTaskClick: (task: Task) => void;
 }
 
-export function Column({ status, tasks }: ColumnProps) {
+export function Column({ status, tasks, onTaskClick }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
@@ -42,7 +43,7 @@ export function Column({ status, tasks }: ColumnProps) {
       >
         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
+            <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
           ))}
         </SortableContext>
       </div>
