@@ -15,7 +15,7 @@ import { Column } from './Column';
 import { TaskCard } from './TaskCard';
 import { TaskDetailPanel } from './TaskDetailPanel';
 
-export function KanbanBoard() {
+export function KanbanBoard({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
@@ -24,14 +24,14 @@ export function KanbanBoard() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  async function loadTasks() {
-    const data = await fetchTasks();
+    async function loadTasks() {
+    const data = await fetchTasks(projectId);
     setTasks(data.sort((a, b) => a.position - b.position));
   }
 
-  useEffect(() => {
+    useEffect(() => {
     loadTasks();
-  }, []);
+  }, [projectId]);
 
   function handleDragStart(event: DragStartEvent) {
     if (isSaving) return;

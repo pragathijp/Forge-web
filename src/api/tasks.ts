@@ -1,13 +1,13 @@
 import { api } from './client';
-import type { Task, TaskStatus, Priority } from './types';
+import type { Task, TaskStatus, Priority, Project } from './types';
 
-export async function fetchTasks(): Promise<Task[]> {
-  const res = await api.get<Task[]>('/tasks');
+export async function fetchTasks(projectId?: string): Promise<Task[]> {
+  const res = await api.get<Task[]>('/tasks', { params: projectId ? { projectId } : {} });
   return res.data;
 }
 
-export async function fetchProjects() {
-  const res = await api.get('/projects');
+export async function fetchProjects(): Promise<Project[]> {
+  const res = await api.get<Project[]>('/projects');
   return res.data;
 }
 
