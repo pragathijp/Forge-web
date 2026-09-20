@@ -6,16 +6,49 @@ import type { Project } from '../api/types';
 export function ProjectListPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  function load() {
+    setIsLoading(true);
+    setError(null);
     fetchProjects()
       .then(setProjects)
+      .catch(() => setError('Could not load your projects. Please try again.'))
       .finally(() => setIsLoading(false));
+  }
+
+  useEffect(() => {
+    load();
   }, []);
 
   if (isLoading) {
     return <div style={{ padding: 'var(--space-6)', color: 'var(--color-text-secondary)', fontSize: 13 }}>Loading projects…</div>;
+  }
+
+  if (error) {
+    return (
+      <div style={{ padding: 'var(--space-6)' }}>
+        <div style={{ fontSize: 13, color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-sm)', maxWidth: 400, marginBottom: 'var(--space-3)' }}>
+          {error}
+        </div>
+        <button
+          onClick={load}
+          style={{
+            padding: '7px 12px',
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
   if (projects.length === 0) {

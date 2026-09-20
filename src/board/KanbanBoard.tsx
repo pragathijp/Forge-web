@@ -21,15 +21,25 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-    async function loadTasks() {
-    const data = await fetchTasks(projectId);
-    setTasks(data.sort((a, b) => a.position - b.position));
+  async function loadTasks() {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const data = await fetchTasks(projectId);
+      setTasks(data.sort((a, b) => a.position - b.position));
+    } catch {
+      setLoadError('Could not load this board. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-    useEffect(() => {
+  useEffect(() => {
     loadTasks();
   }, [projectId]);
 
@@ -106,6 +116,45 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     setSelectedTask(updated);
   }
 
+  if (isLoading) {
+    return (
+      <div style={{ padding: 'var(--space-5)', display: 'flex', gap: 'var(--space-4)' }}>
+        {TASK_STATUSES.map((status) => (
+          <div key={status} style={{ width: 260 }}>
+            <div style={{ height: 16, width: 80, background: 'var(--color-bg-subtle)', borderRadius: 4, marginBottom: 'var(--space-3)' }} />
+            <div style={{ height: 64, background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-2)' }} />
+            <div style={{ height: 64, background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-sm)' }} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div style={{ padding: 'var(--space-5)' }}>
+        <div style={{ fontSize: 13, color: 'var(--color-danger-text)', background: 'var(--color-danger-bg)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-sm)', maxWidth: 400, marginBottom: 'var(--space-3)' }}>
+          {loadError}
+        </div>
+        <button
+          onClick={loadTasks}
+          style={{
+            padding: '7px 12px',
+            fontSize: 13,
+            fontWeight: 500,
+            color: 'var(--color-text-primary)',
+            background: 'var(--color-bg)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-sm)',
+            cursor: 'pointer',
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: 'var(--space-5)' }}>
       {conflictMessage && (
@@ -121,6 +170,11 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
           }}
         >
           {conflictMessage}
+        </div>
+      )}
+      {tasks.length === 0 && (
+        <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>
+          No tasks yet in this project.
         </div>
       )}
       <DndContext
