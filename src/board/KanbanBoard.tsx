@@ -120,7 +120,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     return (
       <div style={{ padding: 'var(--space-5)', display: 'flex', gap: 'var(--space-4)' }}>
         {TASK_STATUSES.map((status) => (
-          <div key={status} style={{ width: 260 }}>
+          <div key={status} style={{ width: 260, flexShrink: 0 }}>
             <div style={{ height: 16, width: 80, background: 'var(--color-bg-subtle)', borderRadius: 4, marginBottom: 'var(--space-3)' }} />
             <div style={{ height: 64, background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-2)' }} />
             <div style={{ height: 64, background: 'var(--color-bg-subtle)', borderRadius: 'var(--radius-sm)' }} />
@@ -183,7 +183,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+        <div style={{ display: 'flex', gap: 'var(--space-4)', overflowX: 'auto', paddingBottom: 'var(--space-2)' }}>
           {TASK_STATUSES.map((status) => (
             <Column
               key={status}

@@ -14,7 +14,7 @@ export function Column({ status, tasks, onTaskClick }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div style={{ width: 260, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+    <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
       <div
         style={{
           fontSize: 12,
@@ -25,7 +25,7 @@ export function Column({ status, tasks, onTaskClick }: ColumnProps) {
           justifyContent: 'space-between',
         }}
       >
-        <span>{STATUS_LABELS[status]}</span>
+        <span style={{ whiteSpace: 'nowrap' }}>{STATUS_LABELS[status]}</span>
         <span>{tasks.length}</span>
       </div>
       <div
