@@ -15,7 +15,7 @@ export function ProjectBoardPage() {
           ← All projects
         </Link>
       </div>
-      <KanbanBoard projectId={projectId} />
+      <KanbanBoard key={projectId} projectId={projectId} />
     </div>
   );
 }

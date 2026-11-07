@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Task, TaskStatus, Priority } from '../api/types';
 import { TASK_STATUSES } from '../api/types';
 import { updateTask } from '../api/tasks';
@@ -38,14 +38,16 @@ export function TaskDetailPanel({ task, onClose, onSaved }: TaskDetailPanelProps
   const [dueDate, setDueDate] = useState(task.dueDate ? task.dueDate.slice(0, 10) : '');
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  useEffect(() => {
+    const [prevTask, setPrevTask] = useState(task);
+  if (task !== prevTask) {
+    setPrevTask(task);
     setCurrentTask(task);
     setTitle(task.title);
     setDescription(task.description ?? '');
     setStatus(task.status);
     setPriority(task.priority);
     setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '');
-  }, [task]);
+  }
 
   async function saveField(changes: Partial<{ title: string; description: string; status: TaskStatus; priority: Priority; dueDate: string | null }>) {
     setSaveError(null);

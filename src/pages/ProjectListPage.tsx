@@ -18,8 +18,21 @@ export function ProjectListPage() {
       .finally(() => setIsLoading(false));
   }
 
-  useEffect(() => {
-    load();
+    useEffect(() => {
+    let cancelled = false;
+    fetchProjects()
+      .then((data) => {
+        if (!cancelled) setProjects(data);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Could not load your projects. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (isLoading) {

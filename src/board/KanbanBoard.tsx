@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { useEffect, useState } from 'react';
 import {
   DndContext,
@@ -39,8 +40,21 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     }
   }
 
-  useEffect(() => {
-    loadTasks();
+    useEffect(() => {
+    let cancelled = false;
+    fetchTasks(projectId)
+      .then((data) => {
+        if (!cancelled) setTasks([...data].sort((a, b) => a.position - b.position));
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError('Could not load this board. Please try again.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   function handleDragStart(event: DragStartEvent) {
@@ -98,8 +112,8 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
         insertAfterTaskId,
       });
       setTasks((current) => current.map((t) => (t.id === saved.id ? saved : t)));
-    } catch (err: any) {
-      if (err?.response?.status === 409) {
+        } catch (err) {
+      if (isAxiosError(err) && err.response?.status === 409) {
         setConflictMessage('This task was updated elsewhere — refreshing…');
         await loadTasks();
         setTimeout(() => setConflictMessage(null), 3000);
