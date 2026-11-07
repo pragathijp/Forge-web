@@ -40,7 +40,7 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     }
   }
 
-    useEffect(() => {
+  useEffect(() => {
     let cancelled = false;
     fetchTasks(projectId)
       .then((data) => {
@@ -67,52 +67,82 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     const { active, over } = event;
     setActiveTask(null);
     if (!over) return;
+    // Dropped back on itself: nothing moved, so nothing to save.
+    if (over.id === active.id) return;
 
-    const activeTask = tasks.find((t) => t.id === active.id);
-    if (!activeTask) return;
+    const movedTask = tasks.find((t) => t.id === active.id);
+    if (!movedTask) return;
 
     const overIsColumn = TASK_STATUSES.includes(over.id as TaskStatus);
     const targetStatus: TaskStatus = overIsColumn
       ? (over.id as TaskStatus)
-      : tasks.find((t) => t.id === over.id)?.status ?? activeTask.status;
+      : (tasks.find((t) => t.id === over.id)?.status ?? movedTask.status);
 
-    const columnTasks = tasks
-      .filter((t) => t.status === targetStatus && t.id !== activeTask.id)
+    // The target column in order, including the moved task if it is already in it.
+    const fullColumn = tasks
+      .filter((t) => t.status === targetStatus)
       .sort((a, b) => a.position - b.position);
+    // The same column without the moved task: the neighbours it can sit between.
+    const columnTasks = fullColumn.filter((t) => t.id !== movedTask.id);
 
     let insertAfterTaskId: string | null = null;
-    if (!overIsColumn) {
+    if (overIsColumn) {
+      // Dropped on the column itself: put it at the end.
+      insertAfterTaskId = columnTasks.length > 0 ? columnTasks[columnTasks.length - 1].id : null;
+    } else {
       const overIndex = columnTasks.findIndex((t) => t.id === over.id);
-      insertAfterTaskId = overIndex > 0 ? columnTasks[overIndex - 1].id : null;
-      if (columnTasks[overIndex]?.id === over.id && overIndex === -1) {
-        insertAfterTaskId = columnTasks.length > 0 ? columnTasks[columnTasks.length - 1].id : null;
+      const sameColumn = targetStatus === movedTask.status;
+
+      let placeAfterOver: boolean;
+      if (sameColumn) {
+        // Same column: moving down lands after the target, moving up lands before it.
+        placeAfterOver =
+          fullColumn.findIndex((t) => t.id === movedTask.id) <
+          fullColumn.findIndex((t) => t.id === over.id);
+      } else {
+        // Another column: after the target if the dragged card is now below its middle.
+        const dragged = active.rect.current.translated;
+        placeAfterOver =
+          !!dragged &&
+          dragged.top + dragged.height / 2 > over.rect.top + over.rect.height / 2;
       }
-    } else if (columnTasks.length > 0) {
-      insertAfterTaskId = columnTasks[columnTasks.length - 1].id;
+
+      if (placeAfterOver) {
+        insertAfterTaskId = over.id as string;
+      } else {
+        insertAfterTaskId = overIndex > 0 ? columnTasks[overIndex - 1].id : null;
+      }
+    }
+
+    // If it would end up exactly where it already is, there is nothing to save.
+    if (targetStatus === movedTask.status) {
+      const currentIndex = fullColumn.findIndex((t) => t.id === movedTask.id);
+      const currentPredecessorId = currentIndex > 0 ? fullColumn[currentIndex - 1].id : null;
+      if (insertAfterTaskId === currentPredecessorId) return;
     }
 
     const previousTasks = tasks;
-    const updatedTask = { ...activeTask, status: targetStatus };
-    const withoutActive = tasks.filter((t) => t.id !== activeTask.id);
+    const updatedTask = { ...movedTask, status: targetStatus };
+    const withoutMoved = tasks.filter((t) => t.id !== movedTask.id);
     const insertIndex = insertAfterTaskId
-      ? withoutActive.findIndex((t) => t.id === insertAfterTaskId) + 1
-      : withoutActive.filter((t) => t.status === targetStatus).length > 0
-        ? withoutActive.findIndex((t) => t.status === targetStatus)
-        : withoutActive.length;
-    const optimisticTasks = [...withoutActive];
+      ? withoutMoved.findIndex((t) => t.id === insertAfterTaskId) + 1
+      : withoutMoved.filter((t) => t.status === targetStatus).length > 0
+        ? withoutMoved.findIndex((t) => t.status === targetStatus)
+        : withoutMoved.length;
+    const optimisticTasks = [...withoutMoved];
     optimisticTasks.splice(insertIndex, 0, updatedTask);
     setTasks(optimisticTasks);
 
     setIsSaving(true);
     try {
       const saved = await moveTask({
-        taskId: activeTask.id,
-        version: activeTask.version,
-        status: targetStatus !== activeTask.status ? targetStatus : undefined,
+        taskId: movedTask.id,
+        version: movedTask.version,
+        status: targetStatus !== movedTask.status ? targetStatus : undefined,
         insertAfterTaskId,
       });
       setTasks((current) => current.map((t) => (t.id === saved.id ? saved : t)));
-        } catch (err) {
+    } catch (err) {
       if (isAxiosError(err) && err.response?.status === 409) {
         setConflictMessage('This task was updated elsewhere — refreshing…');
         await loadTasks();

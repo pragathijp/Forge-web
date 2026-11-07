@@ -9,6 +9,9 @@
   --color-accent: #4550E5;
   --color-accent-hover: #3538C4;
 
+  --focus-ring: 2px solid var(--color-accent);
+  --focus-ring-offset: 2px;
+
   --color-success-bg: #ECFDF3;
   --color-success-text: #027A48;
   --color-warning-bg: #FFFAEB;
@@ -57,4 +60,10 @@ button {
 
 a {
   color: inherit;
+}
+
+
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
 }
