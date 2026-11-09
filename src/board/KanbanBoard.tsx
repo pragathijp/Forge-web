@@ -279,9 +279,10 @@ export function KanbanBoard({ projectId }: { projectId: string }) {
     setAnnouncement('Move cancelled.');
   }
 
-  function handleTaskSaved(updated: Task) {
+    function handleTaskSaved(updated: Task) {
     setTasks((current) => current.map((t) => (t.id === updated.id ? updated : t)));
-    setSelectedTask(updated);
+    // Only refresh the panel if it is still open on this task.
+    setSelectedTask((current) => (current && current.id === updated.id ? updated : current));
   }
 
   if (isLoading) {
